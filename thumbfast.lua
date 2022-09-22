@@ -164,36 +164,26 @@ local function vf_string(filters)
 end
 
 local function calc_dimensions()
-    -- the math here is bad, I think
-    local ratio = mp.get_property_number("video-out-params/aspect")
-    if not ratio then return end
-    local v_par = mp.get_property_number("video-out-params/par", 1)
-    local new_width = math.floor(options.max_width * v_par)
-    local new_height = options.max_height
-    ratio = math.floor(ratio * 1000000) / 1000000
-    local desired_ratio = new_width / new_height
+    local width = mp.get_property_number("video-out-params/dw")
+    local height = mp.get_property_number("video-out-params/dh")
+    if not width or not height then return end
 
+    if width / height > options.max_width / options.max_height then
+        effective_w = options.max_width
+        effective_h = math.floor(height / width * effective_w + 0.5)
+    else
+        effective_h = options.max_height
+        effective_w = math.floor(width / height * effective_h + 0.5)
+    end
+
+    thumb_size = effective_w * effective_h * 4
+
+    local v_par = mp.get_property_number("video-out-params/par", 1)
     if v_par == 1 then
         par = ":force_original_aspect_ratio=decrease"
     else
         par = ""
     end
-
-    if ratio > desired_ratio then
-        new_height = math.floor(new_height * desired_ratio / ratio)
-    else
-        new_width = math.floor(new_width * ratio / desired_ratio)
-    end
-
-    if new_width % 2 ~= 0 then
-        new_width = new_width + 1
-    end
-
-    if new_height % 2 ~= 0 then
-        new_height = new_height + 1
-    end
-
-    thumb_size, effective_w, effective_h = new_width * new_height * 4, new_width, new_height
 end
 
 local function info()
